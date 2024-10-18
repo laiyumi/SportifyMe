@@ -1,7 +1,8 @@
 import json
+import certifi
 from flask import Flask, jsonify, Response, request
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timezone  # Import timezone
 from bson.objectid import ObjectId
 import random
 import os
@@ -18,14 +19,26 @@ with open(config_path) as config_file:
 
 # MongoDB 连接配置
 uri = "mongodb+srv://yhack:whyhackatyhack@cluster0.lphxsva.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(uri)  # 全局客户端变量
+client = MongoClient(uri, tlsCAFile=certifi.where())  # 全局客户端变量
+
+@app.route("/api/test_connection", methods=["GET"])
+def test_connection():
+    try:
+        # Attempt to retrieve one document from the collection
+        user = collection.find_one()
+        if user:
+            return jsonify({"message": "Successfully connected to MongoDB!", "user": str(user["_id"])}), 200
+        else:
+            return jsonify({"message": "Connected to MongoDB, but no documents found."}), 200
+    except Exception as e:
+        return jsonify({"error": f"Failed to connect to MongoDB: {str(e)}"}), 500
 
 # Replicate API token
 os.environ["REPLICATE_API_TOKEN"] = config.get("REPLICATE_API_TOKEN") 
 
 # MongoDB 数据库和集合
 db = client.YHack
-collection = db.Videos
+collection = db.videos
 
 
 # Set up MediaPipe Pose solution
@@ -99,7 +112,6 @@ def stop_feed():
     
     return "Video feed stopped and data saved!"
 
-
 def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
     # Logic to save pose data into three different JSON files
     # For example:
@@ -110,10 +122,58 @@ def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_
     with open('pose_data_session_squats.json', 'w') as f:
         json.dump(squats_pose_data, f, indent=4)
 
+@app.route("/api/users", methods=["GET"])
+def get_users():
+    cursor = collection.find()
+    users = [dict(user) for user in cursor]
+
+    for user in users:
+        user["_id"] = str(user["_id"])
+
+    return {"users": users}
+
+@app.route("/api/users/<user_id>", methods=["GET"])
+def get_user_metrics(user_id):
+    try:
+        object_id = ObjectId(user_id)  # Convert user_id to ObjectId
+    except:
+        return jsonify({"error": "Invalid user ID format"}), 400
+
+    user = collection.find_one({"_id": object_id})
+    if user:
+        user["_id"] = str(user["_id"])
+        return user
+    else:
+        return jsonify({"error": "User not found"}), 404
+
+# add fitness metric
+@app.route("/api/add_metric", methods=["POST"])
+def add_metric():
+    try:
+        object_id = "ObjectId('6700a4ba530c1f6c2d553999')"
+    except Exception as e:
+        print(f"Error converting user_id to ObjectId: {e}")
+        return jsonify({"error": "Invalid user ID format"}), 400
+
+    key_data = process_pose_data()
+    print(f"Key data to be added: {key_data}")  # Log the key data
+
+    result = collection.update_one(
+        {"_id": object_id},
+        {"$push": {"metrics": key_data}}
+    )
+    print(f"Update result: {result.raw_result}")  # Log the update result
+
+    if result.modified_count > 0:
+        return jsonify({"message": "Metric added successfully"}), 200
+    else:
+        print("User not found or metric not added")
+        return jsonify({"error": "User not found or metric not added"}), 404
+
 
 @app.route('/api/process_pose_data', methods=['POST'])
 def process_pose_data():
-    # Process all JSON files and extract key data
+    step_up_times = squats_times = jumping_jack_times = 0  # Initialize variables
     for filename in os.listdir('.'):
         if filename == 'pose_data_session_setup.json':
             step_up_times = get_step_out_num(filename)
@@ -122,16 +182,15 @@ def process_pose_data():
         elif filename == 'pose_data_session_jumping_jack.json':
             jumping_jack_times = get_jumping_jack_num(filename)
 
-        key_data = {
-            "session": filename,
-            "set_up_times": step_up_times,
-            "squat_times": squats_times,
-            "jumping_jack_times": jumping_jack_times,
-        }
-        # Insert into MongoDB
-        collection.insert_one(key_data)
+    key_data = {
+        "date": datetime.now(timezone.utc),  # Use timezone.utc for UTC time
+        "set_up_times": step_up_times,
+        "single_balance_time": jumping_jack_times,
+        "deep_squats_times": squats_times,
+    }
 
-    return jsonify({"message": "Pose data processed and stored in MongoDB."}), 200
+    return key_data  # Return the dictionary directly
+
 
 if __name__ == "__main__":
     app.run(debug=True)
