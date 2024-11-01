@@ -5,9 +5,9 @@ import TaskPage from './TaskPage.jsx';
 import ResultPage from './ResultPage.jsx';
 
 const App = () => {
-  const [data, setData] = useState([{}]);
-  const [loading, setLoading] = useState(true); // Track loading state
-  const [error, setError] = useState(null); // Track error state
+  // const [data, setData] = useState([{}]);
+  // const [loading, setLoading] = useState(true); // Track loading state
+  // const [error, setError] = useState(null); // Track error state
 
   const [currentPage, setCurrentPage] = useState('start');
 
@@ -46,41 +46,41 @@ const App = () => {
   });
 
   // Fetching data from backend
-  const fetchData = () => {
-    setLoading(true);
-    fetch('/api/users')
-      .then(res => res.json())
-      .then(data => {
-        setData(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.log(error);
-        setError('Error fetching data');
-        setLoading(false);
-      });
-  };
+  // const fetchData = () => {
+  //   setLoading(true);
+  //   fetch('/api/users')
+  //     .then(res => res.json())
+  //     .then(data => {
+  //       setData(data);
+  //       setLoading(false);
+  //     })
+  //     .catch(error => {
+  //       console.log(error);
+  //       setError('Error fetching data');
+  //       setLoading(false);
+  //     });
+  // };
 
   // Call fetchData on component mount
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // useEffect(() => {
+  //   fetchData();
+  // }, []);
 
   // Click the button to send a POST request and refresh data
-  const handleAddMetric = () => {
-    const userId = '6700a5db530c1f6c2df55392'; // The user_id is hardcoded here
+  // const handleAddMetric = () => {
+  //   const userId = '6700a5db530c1f6c2df55392'; // The user_id is hardcoded here
 
-    axios.post(`/api/add_metric/${userId}`)
-      .then(response => {
-        console.log(response.data);
-        alert(response.data.message); // Show success message in alert
-        fetchData(); // Re-fetch data after metric is added
-      })
-      .catch(error => {
-        console.error('There was an error adding the fitness metric!', error);
-        alert('Error adding fitness metric');
-      });
-  };
+  //   axios.post(`/api/add_metric/${userId}`)
+  //     .then(response => {
+  //       console.log(response.data);
+  //       alert(response.data.message); // Show success message in alert
+  //       fetchData(); // Re-fetch data after metric is added
+  //     })
+  //     .catch(error => {
+  //       console.error('There was an error adding the fitness metric!', error);
+  //       alert('Error adding fitness metric');
+  //     });
+  // };
 
   // Displaying data on the frontend
   return (

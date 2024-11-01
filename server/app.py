@@ -9,7 +9,10 @@ import replicate
 import cv2
 import mediapipe as mp
 from process_json import get_squat_num, get_step_out_num, get_jumping_jack_num
+from flask_cors import CORS
+
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
 # 从上一级目录加载配置文件
 config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
@@ -27,27 +30,28 @@ os.environ["REPLICATE_API_TOKEN"] = config.get("REPLICATE_API_TOKEN")
 db = client.YHack
 collection = db.Videos
 
-
 # Set up MediaPipe Pose solution
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
-# Capture video from webcam
-camera = cv2.VideoCapture(0)
+# Initial camera
+def init_camera():
+    global camera
+    camera = cv2.VideoCapture(0)
 
 # Store pose data for each session
-session_count = 0
+is_recording = True
+frames =[]
 
-def generate_frames(sport_type=""):
-    global session_count
-    all_pose_data = []
+def generate_frames():
 
-    while True:
+    global is_recording, frames
+
+    while is_recording:
         # Read video frame
         success, frame = camera.read()
         if not success:
             break
-
         # Convert the frame color from BGR to RGB for MediaPipe processing
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
@@ -64,7 +68,7 @@ def generate_frames(sport_type=""):
                     'z': landmark.z,
                     'visibility': landmark.visibility
                 })
-            all_pose_data.append(pose_data)
+            frames.append(pose_data)
 
         # Draw the pose landmarks on the frame
         if result.pose_landmarks:
@@ -79,59 +83,65 @@ def generate_frames(sport_type=""):
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-    # Save pose data to a JSON file after stopping the feed
-    session_count += 1
-    with open(f'pose_data_session_{session_count}_{sport_type}.json', 'w') as f:
-        json.dump(all_pose_data, f, indent=4)
 
-@app.route("/api/video_feed/start_feed/<sport_type>", strict_slashes=False)
-def video_feed(sport_type):
-    return Response(generate_frames(sport_type), mimetype='multipart/x-mixed-replace; boundary=frame')
+@app.route("/api/start_recording/", methods=["GET"])
+def video_feed():
+    global is_recording, frames
+    is_recording = True    
+    init_camera()
 
-@app.route('/api/video_feed/stop_feed', strict_slashes=False)
-def stop_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/api/stop_recording', methods=['POST'])
+def stop_recording():
+    global is_recording
+    is_recording = False
     camera.release()
+
+    # Create a unique filename for each session
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    filename = f"recording_{timestamp}.json"
+
+    with open(filename, 'w') as f:
+        json.dump(frames, f, indent=4)
     
-    # Save pose data to three separate JSON files based on different metrics
-    # Assuming you have logic to differentiate the metrics
-    # This is a placeholder for the actual implementation
-    save_pose_data_to_json()  # New function to save data
+    frames.clear()
     
-    return "Video feed stopped and data saved!"
+    return jsonify({"message": "Recording stopped and saved data!"}), 200
 
 
-def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
-    # Logic to save pose data into three different JSON files
-    # For example:
-    with open('pose_data_session_setup.json', 'w') as f:
-        json.dump(setup_pose_data, f, indent=4)
-    with open('pose_data_session_jumping_jack.json', 'w') as f:
-        json.dump(jumping_jack_pose_data, f, indent=4)
-    with open('pose_data_session_squats.json', 'w') as f:
-        json.dump(squats_pose_data, f, indent=4)
+# def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
+#     # Logic to save pose data into three different JSON files
+#     # For example:
+#     with open('pose_data_session_setup.json', 'w') as f:
+#         json.dump(setup_pose_data, f, indent=4)
+#     with open('pose_data_session_jumping_jack.json', 'w') as f:
+#         json.dump(jumping_jack_pose_data, f, indent=4)
+#     with open('pose_data_session_squats.json', 'w') as f:
+#         json.dump(squats_pose_data, f, indent=4)
 
 
-@app.route('/api/process_pose_data', methods=['POST'])
-def process_pose_data():
-    # Process all JSON files and extract key data
-    for filename in os.listdir('.'):
-        if filename == 'pose_data_session_setup.json':
-            step_up_times = get_step_out_num(filename)
-        elif filename == 'pose_data_session_squats.json':
-            squats_times = get_squat_num(filename)
-        elif filename == 'pose_data_session_jumping_jack.json':
-            jumping_jack_times = get_jumping_jack_num(filename)
+# @app.route('/api/process_pose_data', methods=['POST'])
+# def process_pose_data():
+#     # Process all JSON files and extract key data
+#     for filename in os.listdir('.'):
+#         if filename == 'pose_data_session_setup.json':
+#             step_up_times = get_step_out_num(filename)
+#         elif filename == 'pose_data_session_squats.json':
+#             squats_times = get_squat_num(filename)
+#         elif filename == 'pose_data_session_jumping_jack.json':
+#             jumping_jack_times = get_jumping_jack_num(filename)
 
-        key_data = {
-            "session": filename,
-            "set_up_times": step_up_times,
-            "squat_times": squats_times,
-            "jumping_jack_times": jumping_jack_times,
-        }
-        # Insert into MongoDB
-        collection.insert_one(key_data)
+#         key_data = {
+#             "session": filename,
+#             "set_up_times": step_up_times,
+#             "squat_times": squats_times,
+#             "jumping_jack_times": jumping_jack_times,
+#         }
+#         # Insert into MongoDB
+#         collection.insert_one(key_data)
 
-    return jsonify({"message": "Pose data processed and stored in MongoDB."}), 200
+#     return jsonify({"message": "Pose data processed and stored in MongoDB."}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
