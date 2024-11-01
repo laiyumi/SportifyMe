@@ -34,7 +34,7 @@ def get_squat_num(json_fname):
     num = np.floor((len(peaks_l)+len(peaks_r))/2)
 
     return num
-
+    
 
 def get_step_out_num(json_fname):
     with open(json_fname, 'r') as file:
@@ -75,3 +75,29 @@ def get_jumping_jack_num(json_fname):
 
     num = len(peaks)
     return num
+
+
+# performance
+def get_squat_num_performance(squat_num):
+    if squat_num < 5:
+        return "low"
+    elif 5 <= squat_num < 10:
+        return "middle"
+    else:
+        return "high"
+
+def get_jumping_jack_num_performance(jumping_jack_num):
+    if jumping_jack_num < 5:
+        return "low"
+    elif 5 <= jumping_jack_num < 10:
+        return "middle"
+    else:
+        return "high"
+
+def get_step_out_num_performance(step_out_num):
+    if step_out_num < 5:
+        return "low"
+    elif 5 <= step_out_num < 10:
+        return "middle"
+    else:
+        return "high"
