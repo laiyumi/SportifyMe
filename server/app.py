@@ -9,7 +9,7 @@ import os
 import replicate
 import cv2
 import mediapipe as mp
-from process_json import get_squat_num, get_step_out_num, get_jumping_jack_num
+from process_json import get_squat_num, get_step_out_num, get_jumping_jack_num, get_squat_num_performance, get_jumping_jack_num_performance, get_step_out_num_performance
 app = Flask(__name__)
 
 # 从上一级目录加载配置文件
@@ -39,7 +39,6 @@ os.environ["REPLICATE_API_TOKEN"] = config.get("REPLICATE_API_TOKEN")
 # MongoDB 数据库和集合
 db = client.YHack
 collection = db.videos
-
 
 # Set up MediaPipe Pose solution
 mp_pose = mp.solutions.pose
@@ -122,44 +121,14 @@ def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_
     with open('pose_data_session_squats.json', 'w') as f:
         json.dump(squats_pose_data, f, indent=4)
 
-@app.route("/api/users", methods=["GET"])
-def get_users():
-    cursor = collection.find()
-    users = [dict(user) for user in cursor]
-
-    for user in users:
-        user["_id"] = str(user["_id"])
-
-    return {"users": users}
-
-@app.route("/api/users/<user_id>", methods=["GET"])
-def get_user_metrics(user_id):
-    try:
-        object_id = ObjectId(user_id)  # Convert user_id to ObjectId
-    except:
-        return jsonify({"error": "Invalid user ID format"}), 400
-
-    user = collection.find_one({"_id": object_id})
-    if user:
-        user["_id"] = str(user["_id"])
-        return user
-    else:
-        return jsonify({"error": "User not found"}), 404
-
-# add fitness metric
+# add fitness metric to mongobd
 @app.route("/api/add_metric", methods=["POST"])
 def add_metric():
-    try:
-        object_id = "ObjectId('6700a4ba530c1f6c2d553999')"
-    except Exception as e:
-        print(f"Error converting user_id to ObjectId: {e}")
-        return jsonify({"error": "Invalid user ID format"}), 400
-
     key_data = process_pose_data()
     print(f"Key data to be added: {key_data}")  # Log the key data
 
     result = collection.update_one(
-        {"_id": object_id},
+        {"_id": "ObjectId('6700a4ba530c1f6c2d553999')"},
         {"$push": {"metrics": key_data}}
     )
     print(f"Update result: {result.raw_result}")  # Log the update result
@@ -170,7 +139,7 @@ def add_metric():
         print("User not found or metric not added")
         return jsonify({"error": "User not found or metric not added"}), 404
 
-
+# data process
 @app.route('/api/process_pose_data', methods=['POST'])
 def process_pose_data():
     step_up_times = squats_times = jumping_jack_times = 0  # Initialize variables
@@ -188,8 +157,29 @@ def process_pose_data():
         "single_balance_time": jumping_jack_times,
         "deep_squats_times": squats_times,
     }
-
     return key_data  # Return the dictionary directly
+
+@app.route('/api/get_performance_metric', methods=['POST'])
+def get_history_performance_metric():
+    document = collection.find_one({"_id": "ObjectId('6700a4ba530c1f6c2d553999')"})
+    if document:
+        # Extract the metrics array
+        metrics = document.get("metrics", [])
+        # Prepare a list to hold the formatted metrics
+        formatted_metrics = []
+        
+        for metric in metrics:
+            formatted_metrics.append({
+                "date": metric.get("date"),
+                "set_up_times": [metric.get("set_up_times"), get_step_out_num_performance(metric.get("set_up_times"))],
+                "single_balance_time": [metric.get("single_balance_time"), get_jumping_jack_num_performance(metric.get("single_balance_time"))],
+                "deep_squats_times": [metric.get("deep_squats_times"), get_squat_num_performance(metric.get("deep_squats_times"))],
+            })
+        print(formatted_metrics)
+        return jsonify({ "metrics": formatted_metrics}), 200
+    else:
+        return jsonify({"error": "object not found"}), 404
+
 
 
 if __name__ == "__main__":
