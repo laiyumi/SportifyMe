@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react"; // #qiaohui: 添加 useRef
-import VideoStream from "./VideoStream";
 import axios from "axios";
 
 const TaskPage = ({
@@ -22,7 +21,6 @@ const TaskPage = ({
     }
   }, [timer]);
 
-  // const [isCameraLive, setIsCameraLive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false); // #qiaohui: add video control button
   const videoRef = useRef(null); // #qiaohui: add video control button
 
@@ -45,11 +43,6 @@ const TaskPage = ({
       setIsPlaying(false); // #qiaohui: Reset the playing state
     }
   }, [videoUrl]);
-
-  // Simulate turning on the live camera
-  // useEffect(() => {
-  //     setIsCameraLive(true); // Camera goes live when the page loads
-  // }, []);
 
   const [inputData, setInputData] = useState("");
 
@@ -125,27 +118,31 @@ const TaskPage = ({
           <h1 className="text-2xl font-bold mb-6 text-center">
             Timer: {timer}s
           </h1>
-          <div className="flex flex-col justify-evenly items-center w-full h-full">
-            <h1>Live Pose Detection</h1>
-            <button
-              onClick={handleStartRecording}
-              className="btn btn-secondary text-lg mt-4"
-            >
-              Start Recording
-            </button>
-            <button
-              onClick={handleStopRecording}
-              className="btn btn-secondary text-lg mt-4"
-            >
-              Stop Recording
-            </button>
-            {isRecording ? (
-              <div className="relative w-full max-w-[375px]">
-                <img ref={imgRef} alt="Video Feed" className="w-full h-auto" />
-              </div>
-            ) : (
-              <p>Recording stopped. Video saved.</p>
-            )}
+          <div
+            className="flex flex-col justify-evenly items-center w-full h-full"
+          >
+            <h1 className="text-2xl font-bold">Live Pose Detection</h1>
+            <div className="w-300 h-200 overflow-hidden border-2 border-solid border-gray-200">
+              {isRecording ?(
+                <img ref={imgRef} alt="Video Feed" className="object-cover w-full h-full" />
+              ): (
+                <img src="https://placehold.co/600x400?text=Video+Stream" alt="Placeholder" className="object-cover w-full h-full" />
+              )}
+            </div>
+            <div className="flex flex-row gap-4">
+              <button
+                onClick={handleStartRecording}
+                className="btn btn-info btn-sm"
+              >
+                Start Recording
+              </button>
+              <button
+                onClick={handleStopRecording}
+                className="btn btn-success btn-sm"
+              >
+                Stop Recording
+              </button>
+            </div>
           </div>
           <input
             type="text"

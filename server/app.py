@@ -12,7 +12,6 @@ from process_json import get_squat_num, get_step_out_num, get_jumping_jack_num
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
 # 从上一级目录加载配置文件
 config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
@@ -82,6 +81,8 @@ def generate_frames():
         # Yield the frame as a response to the browser
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+    
+    return b'--frame\r\n\r\n'
 
 
 @app.route("/api/start_recording/", methods=["GET"])
