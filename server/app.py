@@ -103,13 +103,12 @@ def stop_recording():
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     filename = f"recording_{timestamp}.json"
 
-    with open(filename, 'w') as f:
+    with open(os.path.join(app.static_folder, filename), 'w') as f:
         json.dump(frames, f, indent=4)
     
     frames.clear()
     
     return jsonify({"message": "Recording stopped and saved data!"}), 200
-
 
 # def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
 #     # Logic to save pose data into three different JSON files
