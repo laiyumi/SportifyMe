@@ -47,7 +47,7 @@ const App = () => {
         onStart={() => handleNavigation('task1')}
       />}
       {currentPage === 'task1' && <TaskPage
-        title="Task 1"
+        title="Task 1: Step Up"
         content="Do as many step-ups as possible in 10 seconds."
         onNext={() => handleNavigation('task2')}
         onDataSubmit={(data) => handleDataChange('task1', data)}
@@ -55,7 +55,7 @@ const App = () => {
         sportType="step-up"
       />}
       {currentPage === 'task2' && <TaskPage
-        title="Task 2"
+        title="Task 2: Deep Squat"
         content="Do as many as deep squats in 10 seconds."
         onNext={() => handleNavigation('task3')}
         onDataSubmit={(data) => handleDataChange('task2', data)}
@@ -64,7 +64,7 @@ const App = () => {
 
       />}
       {currentPage === 'task3' && <TaskPage
-        title="Task 3"
+        title="Task 3: Single Leg Balance"
         content="Stand on one leg and balance for as long as possible."
         onNext={() => handleNavigation('results')}
         onDataSubmit={(data) => handleDataChange('task3', data)}

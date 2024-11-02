@@ -110,32 +110,15 @@ def stop_recording():
     is_recording = False
     camera.release()
     
-    # Save pose data to three separate JSON files based on different metrics
-    # Assuming you have logic to differentiate the metrics
-    # This is a placeholder for the actual implementation
-    save_pose_data_to_json()  # New function to save data
-    
-    return "Video feed stopped and data saved!"
-
-def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
-    # Logic to save pose data into three different JSON files
-    # For example:
-    with open('pose_data_session_setup.json', 'w') as f:
-        json.dump(setup_pose_data, f, indent=4)
-    with open('pose_data_session_jumping_jack.json', 'w') as f:
-        json.dump(jumping_jack_pose_data, f, indent=4)
-    with open('pose_data_session_squats.json', 'w') as f:
-        json.dump(squats_pose_data, f, indent=4)
-
     # Create a unique filename for each session
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     filename = f"recording_{timestamp}.json"
 
     with open(os.path.join(app.static_folder, filename), 'w') as f:
         json.dump(frames, f, indent=4)
-    
+
     frames.clear()
-    
+
     return jsonify({"message": "Recording stopped and saved data!"}), 200
 
 # def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
@@ -148,64 +131,85 @@ def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_
 #     with open('pose_data_session_squats.json', 'w') as f:
 #         json.dump(squats_pose_data, f, indent=4)
 
-# add fitness metric to mongobd
-@app.route("/api/add_metric", methods=["POST"])
-def add_metric():
-    key_data = process_pose_data()
-    print(f"Key data to be added: {key_data}")  # Log the key data
+#     # Create a unique filename for each session
+#     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+#     filename = f"recording_{timestamp}.json"
 
-    result = collection.update_one(
-        {"_id": "ObjectId('6700a4ba530c1f6c2d553999')"},
-        {"$push": {"metrics": key_data}}
-    )
-    print(f"Update result: {result.raw_result}")  # Log the update result
+#     with open(os.path.join(app.static_folder, filename), 'w') as f:
+#         json.dump(frames, f, indent=4)
+    
+#     frames.clear()
+    
+#     return jsonify({"message": "Recording stopped and saved data!"}), 200
 
-    if result.modified_count > 0:
-        return jsonify({"message": "Metric added successfully"}), 200
-    else:
-        print("User not found or metric not added")
-        return jsonify({"error": "User not found or metric not added"}), 404
+# def save_pose_data_to_json(setup_pose_data, jumping_jack_pose_data, squats_pose_data):
+#     # Logic to save pose data into three different JSON files
+#     # For example:
+#     with open('pose_data_session_setup.json', 'w') as f:
+#         json.dump(setup_pose_data, f, indent=4)
+#     with open('pose_data_session_jumping_jack.json', 'w') as f:
+#         json.dump(jumping_jack_pose_data, f, indent=4)
+#     with open('pose_data_session_squats.json', 'w') as f:
+#         json.dump(squats_pose_data, f, indent=4)
 
-# data process
-@app.route('/api/process_pose_data', methods=['POST'])
-def process_pose_data():
-    step_up_times = squats_times = jumping_jack_times = 0  # Initialize variables
-    for filename in os.listdir('.'):
-        if filename == 'pose_data_session_setup.json':
-            step_up_times = get_step_out_num(filename)
-        elif filename == 'pose_data_session_squats.json':
-            squats_times = get_squat_num(filename)
-        elif filename == 'pose_data_session_jumping_jack.json':
-            jumping_jack_times = get_jumping_jack_num(filename)
+# # add fitness metric to mongobd
+# @app.route("/api/add_metric", methods=["POST"])
+# def add_metric():
+#     key_data = process_pose_data()
+#     print(f"Key data to be added: {key_data}")  # Log the key data
 
-    key_data = {
-        "date": datetime.now(timezone.utc),  # Use timezone.utc for UTC time
-        "set_up_times": step_up_times,
-        "single_balance_time": jumping_jack_times,
-        "deep_squats_times": squats_times,
-    }
-    return key_data  # Return the dictionary directly
+#     result = collection.update_one(
+#         {"_id": "ObjectId('6700a4ba530c1f6c2d553999')"},
+#         {"$push": {"metrics": key_data}}
+#     )
+#     print(f"Update result: {result.raw_result}")  # Log the update result
 
-@app.route('/api/get_performance_metric', methods=['POST'])
-def get_history_performance_metric():
-    document = collection.find_one({"_id": "ObjectId('6700a4ba530c1f6c2d553999')"})
-    if document:
-        # Extract the metrics array
-        metrics = document.get("metrics", [])
-        # Prepare a list to hold the formatted metrics
-        formatted_metrics = []
+#     if result.modified_count > 0:
+#         return jsonify({"message": "Metric added successfully"}), 200
+#     else:
+#         print("User not found or metric not added")
+#         return jsonify({"error": "User not found or metric not added"}), 404
+
+# # data process
+# @app.route('/api/process_pose_data', methods=['POST'])
+# def process_pose_data():
+#     step_up_times = squats_times = jumping_jack_times = 0  # Initialize variables
+#     for filename in os.listdir('.'):
+#         if filename == 'pose_data_session_setup.json':
+#             step_up_times = get_step_out_num(filename)
+#         elif filename == 'pose_data_session_squats.json':
+#             squats_times = get_squat_num(filename)
+#         elif filename == 'pose_data_session_jumping_jack.json':
+#             jumping_jack_times = get_jumping_jack_num(filename)
+
+#     key_data = {
+#         "date": datetime.now(timezone.utc),  # Use timezone.utc for UTC time
+#         "set_up_times": step_up_times,
+#         "single_balance_time": jumping_jack_times,
+#         "deep_squats_times": squats_times,
+#     }
+#     return key_data  # Return the dictionary directly
+
+# @app.route('/api/get_performance_metric', methods=['POST'])
+# def get_history_performance_metric():
+#     document = collection.find_one({"_id": "ObjectId('6700a4ba530c1f6c2d553999')"})
+#     if document:
+#         # Extract the metrics array
+#         metrics = document.get("metrics", [])
+#         # Prepare a list to hold the formatted metrics
+#         formatted_metrics = []
         
-        for metric in metrics:
-            formatted_metrics.append({
-                "date": metric.get("date"),
-                "set_up_times": [metric.get("set_up_times"), get_step_out_num_performance(metric.get("set_up_times"))],
-                "single_balance_time": [metric.get("single_balance_time"), get_jumping_jack_num_performance(metric.get("single_balance_time"))],
-                "deep_squats_times": [metric.get("deep_squats_times"), get_squat_num_performance(metric.get("deep_squats_times"))],
-            })
-        print(formatted_metrics)
-        return jsonify({ "metrics": formatted_metrics}), 200
-    else:
-        return jsonify({"error": "object not found"}), 404
+#         for metric in metrics:
+#             formatted_metrics.append({
+#                 "date": metric.get("date"),
+#                 "set_up_times": [metric.get("set_up_times"), get_step_out_num_performance(metric.get("set_up_times"))],
+#                 "single_balance_time": [metric.get("single_balance_time"), get_jumping_jack_num_performance(metric.get("single_balance_time"))],
+#                 "deep_squats_times": [metric.get("deep_squats_times"), get_squat_num_performance(metric.get("deep_squats_times"))],
+#             })
+#         print(formatted_metrics)
+#         return jsonify({ "metrics": formatted_metrics}), 200
+#     else:
+#         return jsonify({"error": "object not found"}), 404
 
 
 
