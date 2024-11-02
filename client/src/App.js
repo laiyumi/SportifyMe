@@ -52,7 +52,6 @@ const App = () => {
         onNext={() => handleNavigation('task2')}
         onDataSubmit={(data) => handleDataChange('task1', data)}
         videoUrl={videoUrls.task1}  // #qiaohui: Add this line
-        sportType="step-up"
       />}
       {currentPage === 'task2' && <TaskPage
         title="Task 2: Deep Squat"
@@ -60,16 +59,14 @@ const App = () => {
         onNext={() => handleNavigation('task3')}
         onDataSubmit={(data) => handleDataChange('task2', data)}
         videoUrl={videoUrls.task2}  // #qiaohui: Add this line
-        sportType="deep-squat"
 
       />}
       {currentPage === 'task3' && <TaskPage
         title="Task 3: Single Leg Balance"
-        content="Stand on one leg and balance for as long as possible."
+        content="Balance on one leg for as long as possible."
         onNext={() => handleNavigation('results')}
         onDataSubmit={(data) => handleDataChange('task3', data)}
         videoUrl={videoUrls.task3}  // #qiaohui: Add this line
-        sportType="single-leg-balance"
       />}
 
       {currentPage === 'results' && (

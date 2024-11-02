@@ -7,7 +7,6 @@ const TaskPage = ({
   onNext,
   onDataSubmit,
   videoUrl,
-  sportType,
 }) => {
   const [timer, setTimer] = useState(10); // 10-second timer
 
@@ -61,15 +60,21 @@ const TaskPage = ({
 
   const imgRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [task, setTask] = useState('');
 
   const handleStartRecording = () => {
     setIsRecording(true);
+    setTask(title);
   };
 
   const handleStopRecording = async () => {
     setIsRecording(false);
     try {
-      const response = await axios.post("/api/stop_recording");
+      const response = await axios.post("/api/stop_recording", task, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
       console.log(response.data.message);
     } catch (error) {
       console.error("Error stopping video feed:", error);
