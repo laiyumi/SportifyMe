@@ -21,6 +21,14 @@ with open(config_path) as config_file:
 uri = "mongodb+srv://yhack:whyhackatyhack@cluster0.lphxsva.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(uri, tlsCAFile=certifi.where())  # 全局客户端变量
 
+# Get the path to the static folder
+static_folder = os.path.join(os.getcwd(), 'static')
+
+# Check if the static folder exists
+if not os.path.exists(static_folder):
+    # If not, create it
+    os.makedirs(static_folder)
+
 @app.route("/api/test_connection", methods=["GET"])
 def test_connection():
     try:
@@ -96,7 +104,7 @@ def generate_frames():
     return b'--frame\r\n\r\n'
 
 
-@app.route("/api/start_recording/", methods=["GET"])
+@app.route("/api/start_recording/")
 def video_feed():
     global is_recording, frames
     is_recording = True    
@@ -114,7 +122,7 @@ def stop_recording():
     # reformat task name
     task_name = task_name.replace(":", "").replace(" ", "_").lower()
     filename = f"{task_name}.json"
-
+    
     with open(os.path.join(app.static_folder, filename), 'w') as f:
         json.dump(frames, f, indent=4)
 
